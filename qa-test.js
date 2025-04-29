@@ -93,20 +93,36 @@ async function runTests(startIndex = 0, endIndex) {
       console.log(`🌐 Navegando a ${BASE_URL}${activityId}`)
       await page.goto(`${BASE_URL}${activityId}`, { waitUntil: "networkidle", timeout: 30000 })
 
-      // Esperar a que la actividad cargue
+      // Esperar a que la página cargue completamente
+      await page.waitForLoadState("networkidle")
+      await page.waitForTimeout(2000) // Esperar un poco más para asegurar que todo esté cargado
+
+      // Verificar si hay múltiples slides o solo uno
+      let slideCount = 1 // Por defecto asumimos que hay al menos 1 slide
+      let hasMultipleSlides = false
+
       try {
-        await page.waitForSelector("ul.ng-star-inserted li", { timeout: 10000 })
+        // Intentamos verificar si existen los elementos de navegación, con un timeout más corto
+        const hasNavigation = await page
+          .waitForSelector("ul.ng-star-inserted li", { timeout: 5000 })
+          .then(() => true)
+          .catch(() => false)
+
+        if (hasNavigation) {
+          // Si encontramos navegación, contamos los slides
+          slideCount = await page.evaluate(() => {
+            const slides = document.querySelectorAll("ul.ng-star-inserted li")
+            return slides.length
+          })
+          hasMultipleSlides = slideCount > 1
+          console.log(`📊 La actividad tiene ${slideCount} slides`)
+        } else {
+          console.log(`📊 La actividad tiene un solo slide (no se encontró navegación)`)
+        }
       } catch (e) {
-        throw new Error(`No se pudo cargar la actividad ${activityId}: ${e}`)
+        // Si hay un error al buscar la navegación, asumimos que solo hay un slide
+        console.log(`📊 Asumiendo un solo slide (error al buscar navegación: ${e.message})`)
       }
-
-      // Contar el número de slides
-      const slideCount = await page.evaluate(() => {
-        const slides = document.querySelectorAll("ul.ng-star-inserted li")
-        return slides.length
-      })
-
-      console.log(`📊 La actividad tiene ${slideCount} slides`)
 
       // Crear directorio para screenshots de esta actividad (solo si es necesario)
       const activityScreenshotsDir = path.join(SCREENSHOTS_DIR, activityId)
@@ -116,8 +132,8 @@ async function runTests(startIndex = 0, endIndex) {
         console.log(`\n🔍 Probando slide ${slideIndex + 1}/${slideCount}`)
 
         try {
-          // Si no es el primer slide, usar la función proporcionada para avanzar
-          if (slideIndex > 0) {
+          // Si no es el primer slide y hay múltiples slides, usar la función proporcionada para avanzar
+          if (slideIndex > 0 && hasMultipleSlides) {
             console.log(`🔄 Avanzando al slide ${slideIndex + 1}...`)
             const slideAdvanced = await page.evaluate(() => {
               try {
