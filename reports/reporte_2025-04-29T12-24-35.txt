@@ -1,0 +1,19 @@
+REPORTE DE QA - 29/4/2025, 14:24:35
+=================================================
+
+ESARCEN000359 --> QA FAIL
+  Errores:
+  - Slide 1: Elementos fuera del contenedor
+  - Slide 2: Elementos fuera del contenedor
+  - Slide 3: Elementos fuera del contenedor
+  - Slide 4: Elementos fuera del contenedor
+  - Slide 5: Elementos fuera del contenedor
+  - Slide 6: Elementos fuera del contenedor
+
+
+=================================================
+RESUMEN:
+Total actividades: 1
+Actividades correctas: 0
+Actividades con errores: 1
+=================================================
