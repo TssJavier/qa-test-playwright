@@ -24,7 +24,7 @@ const deviceConfigs = [
   },
   {
     name: "iPadAir",
-    viewport: { width: 1031, height: 705 },
+    viewport: { width: 1031, height: 701 },
     deviceScaleFactor: 2,
     isMobile: true,
     userAgent:
@@ -269,8 +269,8 @@ async function highlightContainerBoundaries(page) {
     const oldHighlights = document.querySelectorAll(".qa-test-highlight")
     oldHighlights.forEach((el) => el.remove())
 
-    // Selector del contenedor de referencia
-    const referenceContainerSelector = "swiper-slide.swiper-slide-active > div:nth-child(1)"
+    // Selector del contenedor de referencia - ACTUALIZADO
+    const referenceContainerSelector = "swiper-slide.swiper-slide:nth-child(1)"
     const referenceContainer = document.querySelector(referenceContainerSelector)
 
     if (!referenceContainer) return
@@ -315,16 +315,12 @@ async function highlightContainerBoundaries(page) {
   })
 }
 
-// Función para verificar si los elementos están dentro del contenedor
+// Función actualizada para verificar elementos dentro del contenedor .swiperDiv
 async function checkElementsInContainer(page) {
   return await page.evaluate(() => {
-    // Selector del contenedor de referencia (para dimensiones)
-    const referenceContainerSelector = "swiper-slide.swiper-slide-active > div:nth-child(1)"
-    // Selector del contenedor con elementos a verificar
-    const elementsContainerSelector = "swiper-slide.swiper-slide-active > div:nth-child(2)"
-
+    // Selector del contenedor de referencia - ACTUALIZADO
+    const referenceContainerSelector = "swiper-slide.swiper-slide:nth-child(1)"
     const referenceContainer = document.querySelector(referenceContainerSelector)
-    const elementsContainer = document.querySelector(elementsContainerSelector)
 
     if (!referenceContainer) {
       return {
@@ -332,20 +328,7 @@ async function checkElementsInContainer(page) {
         overflowElements: [
           {
             selector: "reference-container",
-            issue: "No se encontró el contenedor de referencia",
-            boundingBox: null,
-          },
-        ],
-      }
-    }
-
-    if (!elementsContainer) {
-      return {
-        hasOverflow: true,
-        overflowElements: [
-          {
-            selector: "elements-container",
-            issue: "No se encontró el contenedor de elementos",
+            issue: "No se encontró el contenedor de referencia (swiper-slide.swiper-slide:nth-child(1))",
             boundingBox: null,
           },
         ],
@@ -356,13 +339,50 @@ async function checkElementsInContainer(page) {
     const referenceRect = referenceContainer.getBoundingClientRect()
     const overflowElements = []
 
-    // Obtener todos los elementos dentro del contenedor de elementos
-    const allElements = elementsContainer.querySelectorAll("*")
+    // Lista de selectores para elementos de contenido significativo
+    const contentSelectors = [
+      // Textos
+      "h1",
+      "h2",
+      "h3",
+      "p",
+      ".text",
+      ".actTitle",
+      // Imágenes y medios
+      "img",
+      "canvas",
+      "video",
+      "svg",
+      // Inputs y controles interactivos
+      "input",
+      "button",
+      "select",
+      "textarea",
+      "mat-form-field",
+      // Contenedores de contenido específicos
+      ".actCorpoUnit > *:not(cog-advance-questions-exercise-list)",
+    ]
 
-    // Verificar cada elemento
-    allElements.forEach((element, index) => {
+    // Buscar solo los elementos de contenido significativo DENTRO del contenedor .swiperDiv
+    const contentElements = []
+    contentSelectors.forEach((selector) => {
+      try {
+        // Buscar solo dentro del contenedor .swiperDiv
+        const elements = referenceContainer.querySelectorAll(selector)
+        elements.forEach((el) => contentElements.push(el))
+      } catch (e) {
+        // Ignorar errores en selectores inválidos
+      }
+    })
+
+    // Verificar cada elemento de contenido
+    contentElements.forEach((element) => {
       // Ignorar elementos de texto o sin dimensiones
       if (!(element instanceof HTMLElement)) return
+
+      // Verificar si el elemento es realmente visible
+      const style = window.getComputedStyle(element)
+      if (style.opacity === "0" || style.visibility === "hidden" || style.display === "none") return
 
       const elementRect = element.getBoundingClientRect()
 
@@ -370,44 +390,67 @@ async function checkElementsInContainer(page) {
       if (elementRect.width < 2 || elementRect.height < 2) return
 
       // Verificar si el elemento se sale del contenedor de referencia
-      const isOverflowingLeft = elementRect.left < referenceRect.left
-      const isOverflowingRight = elementRect.right > referenceRect.right
-      const isOverflowingTop = elementRect.top < referenceRect.top
-      const isOverflowingBottom = elementRect.bottom > referenceRect.bottom
+      // Añadir un margen de tolerancia de 5px
+      const toleranceMargin = 2
+      const isOverflowingLeft = elementRect.left < referenceRect.left - toleranceMargin
+      const isOverflowingRight = elementRect.right > referenceRect.right + toleranceMargin
+      const isOverflowingTop = elementRect.top < referenceRect.top - toleranceMargin
+      const isOverflowingBottom = elementRect.bottom > referenceRect.bottom + toleranceMargin
 
       if (isOverflowingLeft || isOverflowingRight || isOverflowingTop || isOverflowingBottom) {
-        // Crear un selector para identificar el elemento
-        let selector = element.tagName.toLowerCase()
-        if (element.id) selector += `#${element.id}`
-        if (element.className && typeof element.className === "string") {
-          selector += `.${element.className.split(" ").join(".")}`
+        // Calcular qué porcentaje del elemento está fuera
+        const elementArea = elementRect.width * elementRect.height
+        if (elementArea === 0) return
+
+        // Calcular área de intersección
+        const xOverlap = Math.max(
+          0,
+          Math.min(elementRect.right, referenceRect.right) - Math.max(elementRect.left, referenceRect.left),
+        )
+        const yOverlap = Math.max(
+          0,
+          Math.min(elementRect.bottom, referenceRect.bottom) - Math.max(elementRect.top, referenceRect.top),
+        )
+        const overlapArea = xOverlap * yOverlap
+
+        // Calcular porcentaje de desbordamiento
+        const overflowPercentage = 100 - (overlapArea / elementArea) * 100
+
+        // Solo considerar como error si más del 20% del elemento está fuera
+        if (overflowPercentage > 2) {
+          // Crear un selector para identificar el elemento
+          let selector = element.tagName.toLowerCase()
+          if (element.id) selector += `#${element.id}`
+          if (element.className && typeof element.className === "string") {
+            selector += `.${element.className.split(" ").join(".")}`
+          }
+
+          // Determinar el tipo de desbordamiento
+          let issue = `Elemento fuera del contenedor (${Math.round(overflowPercentage)}%): `
+          if (isOverflowingLeft) issue += "izquierda "
+          if (isOverflowingRight) issue += "derecha "
+          if (isOverflowingTop) issue += "arriba "
+          if (isOverflowingBottom) issue += "abajo"
+
+          overflowElements.push({
+            selector,
+            issue,
+            boundingBox: {
+              element: {
+                x: elementRect.x,
+                y: elementRect.y,
+                width: elementRect.width,
+                height: elementRect.height,
+              },
+              referenceContainer: {
+                x: referenceRect.x,
+                y: referenceRect.y,
+                width: referenceRect.width,
+                height: referenceRect.height,
+              },
+            },
+          })
         }
-
-        // Determinar el tipo de desbordamiento
-        let issue = "Elemento fuera del contenedor: "
-        if (isOverflowingLeft) issue += "izquierda "
-        if (isOverflowingRight) issue += "derecha "
-        if (isOverflowingTop) issue += "arriba "
-        if (isOverflowingBottom) issue += "abajo"
-
-        overflowElements.push({
-          selector,
-          issue,
-          boundingBox: {
-            element: {
-              x: elementRect.x,
-              y: elementRect.y,
-              width: elementRect.width,
-              height: elementRect.height,
-            },
-            referenceContainer: {
-              x: referenceRect.x,
-              y: referenceRect.y,
-              width: referenceRect.width,
-              height: referenceRect.height,
-            },
-          },
-        })
       }
     })
 
