@@ -12,6 +12,26 @@ const ACTIVITIES_FILE = "./activities.json"
 if (!fs.existsSync(SCREENSHOTS_DIR)) fs.mkdirSync(SCREENSHOTS_DIR, { recursive: true })
 if (!fs.existsSync(REPORTS_DIR)) fs.mkdirSync(REPORTS_DIR, { recursive: true })
 
+// Configuración de dispositivos
+const deviceConfigs = [
+  {
+    name: "iPhone7",
+    viewport: { width: 355, height: 647 },
+    deviceScaleFactor: 2,
+    isMobile: true,
+    userAgent:
+      "Mozilla/5.0 (iPhone; CPU iPhone OS 14.6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1",
+  },
+  {
+    name: "iPadAir",
+    viewport: { width: 1031, height: 705 },
+    deviceScaleFactor: 2,
+    isMobile: true,
+    userAgent:
+      "Mozilla/5.0 (iPad; CPU OS 14_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1",
+  },
+]
+
 // Cargar IDs de actividades desde JSON
 const loadActivities = () => {
   try {
@@ -27,14 +47,6 @@ const loadActivities = () => {
     console.error(`Error al cargar actividades: ${error}`)
     return ["ESARCEN000359"] // Actividad por defecto en caso de error
   }
-}
-
-// Configuración de dispositivo
-const deviceConfig = {
-  name: "iPhone 7 Adjusted",
-  viewport: { width: 355, height: 647 },
-  deviceScaleFactor: 2,
-  isMobile: true,
 }
 
 // Función principal
@@ -73,155 +85,166 @@ async function runTests(startIndex = 0, endIndex) {
     const activityId = activityIds[i]
     console.log(`\n📋 Probando actividad ${i + 1}/${endIndex - startIndex + 1}: ${activityId}`)
 
-    let activityStatus = "PASS"
-    const activityErrors = []
-    totalActivities++
+    // Para cada actividad, probar en todos los dispositivos configurados
+    for (const deviceConfig of deviceConfigs) {
+      console.log(`\n📱 Probando en dispositivo: ${deviceConfig.name}`)
 
-    try {
-      // Crear contexto con la configuración del dispositivo
-      const context = await browser.newContext({
-        viewport: deviceConfig.viewport,
-        deviceScaleFactor: deviceConfig.deviceScaleFactor,
-        isMobile: deviceConfig.isMobile,
-        userAgent:
-          "Mozilla/5.0 (iPhone; CPU iPhone OS 14.6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1",
-      })
+      let activityStatus = "PASS"
+      const activityErrors = []
 
-      const page = await context.newPage()
-
-      // Navegar a la actividad
-      console.log(`🌐 Navegando a ${BASE_URL}${activityId}`)
-      await page.goto(`${BASE_URL}${activityId}`, { waitUntil: "networkidle", timeout: 30000 })
-
-      // Esperar a que la página cargue completamente
-      await page.waitForLoadState("networkidle")
-      await page.waitForTimeout(2000) // Esperar un poco más para asegurar que todo esté cargado
-
-      // Verificar si hay múltiples slides o solo uno
-      let slideCount = 1 // Por defecto asumimos que hay al menos 1 slide
-      let hasMultipleSlides = false
+      // Solo incrementamos el contador total una vez por actividad, no por dispositivo
+      if (deviceConfig === deviceConfigs[0]) {
+        totalActivities++
+      }
 
       try {
-        // Intentamos verificar si existen los elementos de navegación, con un timeout más corto
-        const hasNavigation = await page
-          .waitForSelector("ul.ng-star-inserted li", { timeout: 5000 })
-          .then(() => true)
-          .catch(() => false)
+        // Crear contexto con la configuración del dispositivo
+        const context = await browser.newContext({
+          viewport: deviceConfig.viewport,
+          deviceScaleFactor: deviceConfig.deviceScaleFactor,
+          isMobile: deviceConfig.isMobile,
+          userAgent: deviceConfig.userAgent,
+        })
 
-        if (hasNavigation) {
-          // Si encontramos navegación, contamos los slides
-          slideCount = await page.evaluate(() => {
-            const slides = document.querySelectorAll("ul.ng-star-inserted li")
-            return slides.length
-          })
-          hasMultipleSlides = slideCount > 1
-          console.log(`📊 La actividad tiene ${slideCount} slides`)
-        } else {
-          console.log(`📊 La actividad tiene un solo slide (no se encontró navegación)`)
-        }
-      } catch (e) {
-        // Si hay un error al buscar la navegación, asumimos que solo hay un slide
-        console.log(`📊 Asumiendo un solo slide (error al buscar navegación: ${e.message})`)
-      }
+        const page = await context.newPage()
 
-      // Crear directorio para screenshots de esta actividad (solo si es necesario)
-      const activityScreenshotsDir = path.join(SCREENSHOTS_DIR, activityId)
+        // Navegar a la actividad
+        console.log(`🌐 Navegando a ${BASE_URL}${activityId}`)
+        await page.goto(`${BASE_URL}${activityId}`, { waitUntil: "networkidle", timeout: 30000 })
 
-      // Iterar sobre cada slide
-      for (let slideIndex = 0; slideIndex < slideCount; slideIndex++) {
-        console.log(`\n🔍 Probando slide ${slideIndex + 1}/${slideCount}`)
+        // Esperar a que la página cargue completamente
+        await page.waitForLoadState("networkidle")
+        await page.waitForTimeout(2000) // Esperar un poco más para asegurar que todo esté cargado
+
+        // Verificar si hay múltiples slides o solo uno
+        let slideCount = 1 // Por defecto asumimos que hay al menos 1 slide
+        let hasMultipleSlides = false
 
         try {
-          // Si no es el primer slide y hay múltiples slides, usar la función proporcionada para avanzar
-          if (slideIndex > 0 && hasMultipleSlides) {
-            console.log(`🔄 Avanzando al slide ${slideIndex + 1}...`)
-            const slideAdvanced = await page.evaluate(() => {
-              try {
-                window["ng"].getComponent(document.querySelector("cog-advance-questions-container")).next(0)
-                return true
-              } catch (e) {
-                console.error("Error al avanzar slide:", e)
-                return false
-              }
+          // Intentamos verificar si existen los elementos de navegación, con un timeout más corto
+          const hasNavigation = await page
+            .waitForSelector("ul.ng-star-inserted li", { timeout: 5000 })
+            .then(() => true)
+            .catch(() => false)
+
+          if (hasNavigation) {
+            // Si encontramos navegación, contamos los slides
+            slideCount = await page.evaluate(() => {
+              const slides = document.querySelectorAll("ul.ng-star-inserted li")
+              return slides.length
             })
-
-            if (!slideAdvanced) {
-              console.warn(`⚠️ No se pudo avanzar al slide ${slideIndex + 1}`)
-            }
-
-            // Esperar a que cargue el nuevo slide
-            await page.waitForTimeout(2000) // Aumentamos el tiempo de espera para asegurar que cargue completamente
-          }
-
-          // Opcional: Resaltar visualmente los límites del contenedor
-          await highlightContainerBoundaries(page)
-
-          // Verificar si hay elementos que se salen del contenedor
-          console.log(`🔎 Verificando elementos en el contenedor...`)
-          const checkResult = await checkElementsInContainer(page)
-
-          if (checkResult.hasOverflow) {
-            activityStatus = "FAIL"
-
-            // Crear directorio para screenshots si no existe
-            if (!fs.existsSync(activityScreenshotsDir)) {
-              fs.mkdirSync(activityScreenshotsDir, { recursive: true })
-            }
-
-            // Tomar captura de pantalla si hay errores
-            const screenshotFileName = `slide${slideIndex + 1}_fail.png`
-            const screenshotPath = path.join(activityScreenshotsDir, screenshotFileName)
-            await page.screenshot({ path: screenshotPath, fullPage: true })
-
-            const errorMessage = `Slide ${slideIndex + 1}: Elementos fuera del contenedor`
-            activityErrors.push(errorMessage)
-
-            console.log(`❌ ${errorMessage}. Captura guardada en ${screenshotPath}`)
-            checkResult.overflowElements.forEach((el) => {
-              console.log(`  - ${el.selector}: ${el.issue}`)
-            })
+            hasMultipleSlides = slideCount > 1
+            console.log(`📊 La actividad tiene ${slideCount} slides`)
           } else {
-            console.log(`✅ Slide ${slideIndex + 1}: Todos los elementos dentro del contenedor`)
+            console.log(`📊 La actividad tiene un solo slide (no se encontró navegación)`)
           }
         } catch (e) {
-          activityStatus = "FAIL"
-          const errorMessage = `Error en slide ${slideIndex + 1}: ${e}`
-          activityErrors.push(errorMessage)
-          console.error(`❌ ${errorMessage}`)
+          // Si hay un error al buscar la navegación, asumimos que solo hay un slide
+          console.log(`📊 Asumiendo un solo slide (error al buscar navegación: ${e.message})`)
         }
+
+        // Crear directorio para screenshots de esta actividad y dispositivo
+        const deviceDir = path.join(SCREENSHOTS_DIR, activityId, deviceConfig.name)
+
+        // Iterar sobre cada slide
+        for (let slideIndex = 0; slideIndex < slideCount; slideIndex++) {
+          console.log(`\n🔍 Probando slide ${slideIndex + 1}/${slideCount}`)
+
+          try {
+            // Si no es el primer slide y hay múltiples slides, usar la función proporcionada para avanzar
+            if (slideIndex > 0 && hasMultipleSlides) {
+              console.log(`🔄 Avanzando al slide ${slideIndex + 1}...`)
+              const slideAdvanced = await page.evaluate(() => {
+                try {
+                  window["ng"].getComponent(document.querySelector("cog-advance-questions-container")).next(0)
+                  return true
+                } catch (e) {
+                  console.error("Error al avanzar slide:", e)
+                  return false
+                }
+              })
+
+              if (!slideAdvanced) {
+                console.warn(`⚠️ No se pudo avanzar al slide ${slideIndex + 1}`)
+              }
+
+              // Esperar a que cargue el nuevo slide
+              await page.waitForTimeout(2000) // Aumentamos el tiempo de espera para asegurar que cargue completamente
+            }
+
+            // Opcional: Resaltar visualmente los límites del contenedor
+            await highlightContainerBoundaries(page)
+
+            // Verificar si hay elementos que se salen del contenedor
+            console.log(`🔎 Verificando elementos en el contenedor...`)
+            const checkResult = await checkElementsInContainer(page)
+
+            if (checkResult.hasOverflow) {
+              activityStatus = "FAIL"
+
+              // Crear directorio para screenshots si no existe
+              if (!fs.existsSync(deviceDir)) {
+                fs.mkdirSync(deviceDir, { recursive: true })
+              }
+
+              // Tomar captura de pantalla si hay errores
+              const screenshotFileName = `slide${slideIndex + 1}_fail.png`
+              const screenshotPath = path.join(deviceDir, screenshotFileName)
+              await page.screenshot({ path: screenshotPath, fullPage: true })
+
+              const errorMessage = `Slide ${slideIndex + 1}: Elementos fuera del contenedor`
+              activityErrors.push(errorMessage)
+
+              console.log(`❌ ${errorMessage}. Captura guardada en ${screenshotPath}`)
+              checkResult.overflowElements.forEach((el) => {
+                console.log(`  - ${el.selector}: ${el.issue}`)
+              })
+            } else {
+              console.log(`✅ Slide ${slideIndex + 1}: Todos los elementos dentro del contenedor`)
+            }
+          } catch (e) {
+            activityStatus = "FAIL"
+            const errorMessage = `Error en slide ${slideIndex + 1}: ${e}`
+            activityErrors.push(errorMessage)
+            console.error(`❌ ${errorMessage}`)
+          }
+        }
+
+        // Cerrar el contexto
+        await context.close()
+      } catch (e) {
+        activityStatus = "FAIL"
+        const errorMessage = `Error general en actividad: ${e}`
+        activityErrors.push(errorMessage)
+        console.error(`❌ ${errorMessage}`)
       }
 
-      // Cerrar el contexto
-      await context.close()
-    } catch (e) {
-      activityStatus = "FAIL"
-      const errorMessage = `Error general en actividad: ${e}`
-      activityErrors.push(errorMessage)
-      console.error(`❌ ${errorMessage}`)
-    }
+      // Actualizar contadores (solo contamos una vez por actividad, usando el peor resultado)
+      if (activityStatus === "FAIL") {
+        // Si algún dispositivo falla, marcamos la actividad como fallida
+        failedActivities = Math.min(failedActivities + 1, totalActivities)
+        passedActivities = totalActivities - failedActivities
+      } else if (deviceConfig === deviceConfigs[deviceConfigs.length - 1] && activityStatus === "PASS") {
+        // Solo si es el último dispositivo y todos los anteriores pasaron
+        passedActivities++
+      }
 
-    // Actualizar contadores
-    if (activityStatus === "PASS") {
-      passedActivities++
-    } else {
-      failedActivities++
-    }
+      // Añadir al reporte
+      fs.appendFileSync(reportPath, `${activityId} (${deviceConfig.name}) --> QA ${activityStatus}\n`)
+      if (activityErrors.length > 0) {
+        fs.appendFileSync(reportPath, `  Errores:\n`)
+        activityErrors.forEach((error) => {
+          fs.appendFileSync(reportPath, `  - ${error}\n`)
+        })
+        fs.appendFileSync(reportPath, `\n`)
+      }
 
-    // Añadir al reporte
-    fs.appendFileSync(reportPath, `${activityId} --> QA ${activityStatus}\n`)
-    if (activityErrors.length > 0) {
-      fs.appendFileSync(reportPath, `  Errores:\n`)
-      activityErrors.forEach((error) => {
-        fs.appendFileSync(reportPath, `  - ${error}\n`)
-      })
-      fs.appendFileSync(reportPath, `\n`)
-    }
-
-    // Mostrar resultado final de la actividad
-    if (activityStatus === "PASS") {
-      console.log(`\n✅ Actividad ${activityId}: QA PASS`)
-    } else {
-      console.log(`\n❌ Actividad ${activityId}: QA FAIL`)
+      // Mostrar resultado final de la actividad para este dispositivo
+      if (activityStatus === "PASS") {
+        console.log(`\n✅ Actividad ${activityId} (${deviceConfig.name}): QA PASS`)
+      } else {
+        console.log(`\n❌ Actividad ${activityId} (${deviceConfig.name}): QA FAIL`)
+      }
     }
   }
 

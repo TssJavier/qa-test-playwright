@@ -1,0 +1,21 @@
+REPORTE DE QA - 29/4/2025, 16:36:20
+=================================================
+
+ESARCEN000359 --> QA PASS
+ESARCEN000360 --> QA PASS
+ESARCEN000361 --> QA PASS
+ESARCEN000358 --> QA FAIL
+  Errores:
+  - Slide 1: Elementos fuera del contenedor
+
+ESARCEN000357 --> QA FAIL
+  Errores:
+  - Slide 1: Elementos fuera del contenedor
+
+
+=================================================
+RESUMEN:
+Total actividades: 5
+Actividades correctas: 3
+Actividades con errores: 2
+=================================================

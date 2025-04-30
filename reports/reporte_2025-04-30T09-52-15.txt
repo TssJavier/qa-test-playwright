@@ -1,0 +1,26 @@
+REPORTE DE QA - 30/4/2025, 11:52:15
+=================================================
+
+ESARCEN000359 (iPhone7) --> QA PASS
+ESARCEN000359 (iPadAir) --> QA PASS
+ESARCEN000360 (iPhone7) --> QA PASS
+ESARCEN000360 (iPadAir) --> QA FAIL
+  Errores:
+  - Slide 1: Elementos fuera del contenedor
+
+ESARCEN000361 (iPhone7) --> QA PASS
+ESARCEN000361 (iPadAir) --> QA PASS
+ESARC00334980 (iPhone7) --> QA PASS
+ESARC00334980 (iPadAir) --> QA FAIL
+  Errores:
+  - Slide 1: Elementos fuera del contenedor
+  - Slide 2: Elementos fuera del contenedor
+  - Slide 3: Elementos fuera del contenedor
+
+
+=================================================
+RESUMEN:
+Total actividades: 4
+Actividades correctas: 2
+Actividades con errores: 2
+=================================================
