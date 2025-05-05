@@ -146,69 +146,79 @@ async function runTests(startIndex = 0, endIndex) {
         // Crear directorio para screenshots de esta actividad y dispositivo
         const deviceDir = path.join(SCREENSHOTS_DIR, activityId, deviceConfig.name)
 
-        // Iterar sobre cada slide
-        for (let slideIndex = 0; slideIndex < slideCount; slideIndex++) {
-          console.log(`\n🔍 Probando slide ${slideIndex + 1}/${slideCount}`)
+// Iterar sobre cada slide
+for (let slideIndex = 0; slideIndex < slideCount; slideIndex++) {
+  console.log(`\n🔍 Probando slide ${slideIndex + 1}/${slideCount}`)
 
-          try {
-            // Si no es el primer slide y hay múltiples slides, usar la función proporcionada para avanzar
-            if (slideIndex > 0 && hasMultipleSlides) {
-              console.log(`🔄 Avanzando al slide ${slideIndex + 1}...`)
-              const slideAdvanced = await page.evaluate(() => {
-                try {
-                  window["ng"].getComponent(document.querySelector("cog-advance-questions-container")).next(0)
-                  return true
-                } catch (e) {
-                  console.error("Error al avanzar slide:", e)
-                  return false
-                }
-              })
+  // Reiniciar estado por slide
+  let slideStatus = "PASS"
 
-              if (!slideAdvanced) {
-                console.warn(`⚠️ No se pudo avanzar al slide ${slideIndex + 1}`)
-              }
-
-              // Esperar a que cargue el nuevo slide
-              await page.waitForTimeout(2000) // Aumentamos el tiempo de espera para asegurar que cargue completamente
-            }
-
-            // Opcional: Resaltar visualmente los límites del contenedor
-            await highlightContainerBoundaries(page)
-
-            // Verificar si hay elementos que se salen del contenedor
-            console.log(`🔎 Verificando elementos en el contenedor...`)
-            const checkResult = await checkElementsInContainer(page)
-
-            if (checkResult.hasOverflow) {
-              activityStatus = "FAIL"
-
-              // Crear directorio para screenshots si no existe
-              if (!fs.existsSync(deviceDir)) {
-                fs.mkdirSync(deviceDir, { recursive: true })
-              }
-
-              // Tomar captura de pantalla si hay errores
-              const screenshotFileName = `slide${slideIndex + 1}_fail.png`
-              const screenshotPath = path.join(deviceDir, screenshotFileName)
-              await page.screenshot({ path: screenshotPath, fullPage: true })
-
-              const errorMessage = `Slide ${slideIndex + 1}: Elementos fuera del contenedor`
-              activityErrors.push(errorMessage)
-
-              console.log(`❌ ${errorMessage}. Captura guardada en ${screenshotPath}`)
-              checkResult.overflowElements.forEach((el) => {
-                console.log(`  - ${el.selector}: ${el.issue}`)
-              })
-            } else {
-              console.log(`✅ Slide ${slideIndex + 1}: Todos los elementos dentro del contenedor`)
-            }
-          } catch (e) {
-            activityStatus = "FAIL"
-            const errorMessage = `Error en slide ${slideIndex + 1}: ${e}`
-            activityErrors.push(errorMessage)
-            console.error(`❌ ${errorMessage}`)
-          }
+  try {
+    // Si no es el primer slide y hay múltiples slides, avanzar al siguiente
+    if (slideIndex > 0 && hasMultipleSlides) {
+      console.log(`🔄 Avanzando al slide ${slideIndex + 1}...`)
+      const slideAdvanced = await page.evaluate(() => {
+        try {
+          window["ng"].getComponent(document.querySelector("cog-advance-questions-container")).next(0)
+          return true
+        } catch (e) {
+          console.error("Error al avanzar slide:", e)
+          return false
         }
+      })
+
+      if (!slideAdvanced) {
+        console.warn(`⚠️ No se pudo avanzar al slide ${slideIndex + 1}`)
+      }
+
+      // Esperar a que el nuevo slide esté activo
+      await page.waitForSelector("swiper-slide.swiper-slide-active", { timeout: 5000 })
+      await page.waitForTimeout(1000)
+    }
+
+    // Resaltar visualmente los límites del contenedor
+    await highlightContainerBoundaries(page)
+
+    // Verificar si hay elementos que se salen del contenedor
+    console.log(`🔎 Verificando elementos en el contenedor...`)
+    const checkResult = await checkElementsInContainer(page)
+
+    if (checkResult.hasOverflow) {
+      slideStatus = "FAIL"
+
+      // Crear directorio si no existe
+      if (!fs.existsSync(deviceDir)) {
+        fs.mkdirSync(deviceDir, { recursive: true })
+      }
+
+      // Captura de pantalla del fallo
+      const screenshotFileName = `slide${slideIndex + 1}_fail.png`
+      const screenshotPath = path.join(deviceDir, screenshotFileName)
+      await page.screenshot({ path: screenshotPath, fullPage: true })
+
+      const errorMessage = `Slide ${slideIndex + 1}: Elementos fuera del contenedor`
+      activityErrors.push(errorMessage)
+
+      console.log(`❌ ${errorMessage}. Captura guardada en ${screenshotPath}`)
+      checkResult.overflowElements.forEach((el) => {
+        console.log(`  - ${el.selector}: ${el.issue}`)
+      })
+    } else {
+      console.log(`✅ Slide ${slideIndex + 1}: Todos los elementos dentro del contenedor`)
+    }
+  } catch (e) {
+    slideStatus = "FAIL"
+    const errorMessage = `Error en slide ${slideIndex + 1}: ${e}`
+    activityErrors.push(errorMessage)
+    console.error(`❌ ${errorMessage}`)
+  }
+
+  // Si este slide falló, actualizar estado general de la actividad
+  if (slideStatus === "FAIL") {
+    activityStatus = "FAIL"
+  }
+}
+
 
         // Cerrar el contexto
         await context.close()
@@ -270,7 +280,7 @@ async function highlightContainerBoundaries(page) {
     oldHighlights.forEach((el) => el.remove())
 
     // Selector del contenedor de referencia - ACTUALIZADO
-    const referenceContainerSelector = "swiper-slide.swiper-slide:nth-child(1)"
+    const referenceContainerSelector = "swiper-slide.swiper-slide-active"
     const referenceContainer = document.querySelector(referenceContainerSelector)
 
     if (!referenceContainer) return
@@ -319,7 +329,7 @@ async function highlightContainerBoundaries(page) {
 async function checkElementsInContainer(page) {
   return await page.evaluate(() => {
     // Selector del contenedor de referencia - ACTUALIZADO
-    const referenceContainerSelector = "swiper-slide.swiper-slide:nth-child(1)"
+    const referenceContainerSelector = "swiper-slide.swiper-slide-active"
     const referenceContainer = document.querySelector(referenceContainerSelector)
 
     if (!referenceContainer) {
@@ -328,7 +338,7 @@ async function checkElementsInContainer(page) {
         overflowElements: [
           {
             selector: "reference-container",
-            issue: "No se encontró el contenedor de referencia (swiper-slide.swiper-slide:nth-child(1))",
+            issue: "No se encontró el contenedor de referencia (swiper-slide.swiper-slide:nth-child())",
             boundingBox: null,
           },
         ],
@@ -462,27 +472,37 @@ async function checkElementsInContainer(page) {
 }
 
 // Función para ejecutar el script con argumentos de línea de comandos
-function parseArgs() {
+function parseArgs(activityIds) {
   const args = process.argv.slice(2)
-  let startIndex = 0
-  let endIndex = undefined
 
-  if (args.length >= 1) {
-    const range = args[0].split("-")
-    startIndex = Number.parseInt(range[0], 10)
-
-    if (range.length > 1) {
-      endIndex = Number.parseInt(range[1], 10)
-    } else {
-      endIndex = startIndex
-    }
+  // Si no hay argumentos, probar todas
+  if (args.length === 0) {
+    return { startIndex: 0, endIndex: activityIds.length - 1 }
   }
 
-  return { startIndex, endIndex }
+  const input = args[0]
+
+  // Si es un número o un rango de índices
+  if (/^\d+(-\d+)?$/.test(input)) {
+    const parts = input.split("-").map((x) => parseInt(x, 10))
+    const startIndex = parts[0]
+    const endIndex = parts[1] !== undefined ? parts[1] : startIndex
+    return { startIndex, endIndex }
+  }
+
+  // Si es un ID alfanumérico (como ESARC00380942)
+  const indexById = activityIds.indexOf(input)
+  if (indexById !== -1) {
+    return { startIndex: indexById, endIndex: indexById }
+  } else {
+    console.error(`❌ ID de actividad '${input}' no encontrado en activities.json`)
+    process.exit(1)
+  }
 }
 
 // Ejecutar el script
-const { startIndex, endIndex } = parseArgs()
+const activityIds = loadActivities()
+const { startIndex, endIndex } = parseArgs(activityIds)
 runTests(startIndex, endIndex).catch((error) => {
   console.error("Error en la ejecución del script:", error)
   process.exit(1)

@@ -52,7 +52,7 @@ ponerlo a true:
 0. Coger medida mas pequeña de iPhone y de ipad:
 	
 	- iphone7: 355x647 (el iPhone mide 375x367) Le quitamos 20px
-	- ipad: 
+	- ipad: ipad air: 1031x701
 
 
 #################### Cómo usar este script##############################
@@ -105,12 +105,28 @@ ponerlo a true:
 
 		- node qa-test.js 5
 
+	Para probar una sola actividad por ID
+
+		- node qa-test.js ESARC00380942
+6. ** Enviar reporte y screenshots a o.rosario@gmail.com
+
+		- https://wetransfer.com/
+
 --------------------------------EXTRA-------------------------------------------------
 
-6. ** Comando para redireccion repositorio a study en public childer:
+7. ** Comando para redireccion repositorio a study en public childer:
+
+	- ir a powershell y modo administrador
+	- cd C:\Users\jdiaz\Desktop\SantillanaApps\KidsApp\cognifit.clevermind.html5>
+	- ejecutarlos 2 veces, una borra lo que hay y otra crea la carpeta study con todo.
 	-> PS C:\Users\jdiaz\Desktop\SantillanaApps\KidsApp\cognifit.clevermind.html5> npm run link-activities-win --src=C:\Users\jdiaz\Desktop\SantillanaApps\cognifit.exercises\exercises\4_PRIMARIA\Matematicas
 
 	- cambiar la ruta de la carpeta que quiero y se mete automáticamente en el study de publicchildren
+
+
+npm run link-activities-win --src=C:\Users\jdiaz\Desktop\SantillanaApps\cognifit.exercises\exercises\3_PRIMARIA\Matematicas
+
+
 
 
 
