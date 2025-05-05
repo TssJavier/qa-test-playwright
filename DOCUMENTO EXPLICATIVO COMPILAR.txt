@@ -45,8 +45,6 @@ ponerlo a true:
 		- node qa-test.js 0-2   - (para probar multiples por indice)
 
 
-
-
 *************************************************************************************************
 ***************************** SCRIPT PARA TEST ACTIVITIES ***************************************
 *************************************************************************************************
@@ -59,7 +57,7 @@ ponerlo a true:
 
 #################### Cómo usar este script##############################
 
-1. **Instalar dependencias**:
+0. **Instalar dependencias** si eres nuevo en el proyecto:
 		
 		- npm install
 		- npm install playwright typescript @types/node
@@ -69,25 +67,51 @@ ponerlo a true:
 		- npm install -g @angular/cli
 
 
-3. **Ejecutar el script**:
+1. **Traerte la actualización de oli con el comando en cognifit.exercises:
+	
+	- git checkout develop_oli
+
+2. ** Pasar los ESARC de la carpeta cognifit.exercises a la carpeta study en public children del App
+
+	- Nos metemos en cognifit.exercise y copiamos las carpetas de actividades a probar
+	- copiamos las actividades a probar en: cognifit.clevermind.html5 --> public_children --> tasks --> la carpeta "study"
+	- Copiamos los nombres de ID de las carpetas a probar en el json: QATestPlaywright --> activities.json
+
+3. ** Cambiar idioma aquí en user-locale.service.ts y poner el idioma de actividades que queremos testear
+
+	- Nos metemos en el archivo: cognifit.clevermind.html5\src\app\services> user-locale.service.ts
+	- hay que poner el idioma que queramos probar: ['ca', 'en', 'es', 'eu', 'gl'] 
+	- cambiarlo aquí: 
+			const validLocale = 'ca';
+
+4. ** Iniciar la aplicación de children y logearte:
+
+	- ng serve --configuration=development-children
+	- abrir el App: http://localhost:4200/
+	- logearte
+
+5. **Ejecutar el script**:
 
 
 	Para probar todas las actividades:
 
-		- node activity-tester.js
+		- node qa-test.js
 
 	Para probar un rango específico (por ejemplo, actividades 0 a 200):
 
-		- node activity-tester.js 0-200
+		- node qa-test.js 0-200
 
 	Para probar una sola actividad (por ejemplo, la actividad 5):
 
-		- node activity-tester.js 5
+		- node qa-test.js 5
+
+--------------------------------EXTRA-------------------------------------------------
+
+6. ** Comando para redireccion repositorio a study en public childer:
+	-> PS C:\Users\jdiaz\Desktop\SantillanaApps\KidsApp\cognifit.clevermind.html5> npm run link-activities-win --src=C:\Users\jdiaz\Desktop\SantillanaApps\cognifit.exercises\exercises\4_PRIMARIA\Matematicas
+
+	- cambiar la ruta de la carpeta que quiero y se mete automáticamente en el study de publicchildren
 
 
 
 
-
-
-	
-	
