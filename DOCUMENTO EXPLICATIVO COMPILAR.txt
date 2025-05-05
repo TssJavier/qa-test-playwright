@@ -77,6 +77,9 @@ ponerlo a true:
 	- copiamos las actividades a probar en: cognifit.clevermind.html5 --> public_children --> tasks --> la carpeta "study"
 	- Copiamos los nombres de ID de las carpetas a probar en el json: QATestPlaywright --> activities.json
 
+	- copiamos rutas de todos los archivo en study y copiamos en paths.js
+	- ejecuto: node extract-ids-to-activities.js  y me da el json perfecto.
+
 3. ** Cambiar idioma aquí en user-locale.service.ts y poner el idioma de actividades que queremos testear
 
 	- Nos metemos en el archivo: cognifit.clevermind.html5\src\app\services> user-locale.service.ts
