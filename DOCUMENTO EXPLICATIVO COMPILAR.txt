@@ -1,0 +1,134 @@
+*************************************************************************************************
+***************************** COMPILAR APP MINDED ***********************************************
+*************************************************************************************************
+
+0. Para clonar y compilar todo
+	- Pedir acceso de lectura al repositorio cognifit/cognifit.clevermind.html5.git
+	- git clone git@github.com:cognifit/cognifit.clevermind.html5.git
+	- npm install
+
+1. Para abrir padres App:
+	- npm start
+
+2. Para abrir kids App:
+	- ng serve --configuration=development-children
+
+
+3. En la carpeta source --> app --> services --> study-task.service.ts cambiar: 
+
+	- private devOverrideForLocalTask = (window as any)['devUseLocalTask'] === true;
+ 
+ponerlo a true: 
+
+ 	- private devOverrideForLocalTask = true;
+
+
+4. para cambiar rama a developers donde esta todo actualizado (pre), iniciar de nuevo el contendor con Control+C y ng serve para ver cambios si añado a la carpeta nuevos ESARCS
+	
+	- git checkout develop
+
+5. Añadir en la carpeta: public_children --> tasks --> la carpeta "study". Aquí añadimos todos los ESARCS para poder acceder a ellos por enlace como (cambia solo el ID): 
+	- http://localhost:4200/children/study/task/ESARCEN000359 
+
+6. abrir repo actividades y poner rama para descargarlas y pegarlas en mi studytasks de public children:
+	- git checkout develop_oli
+
+7. para lanzar el script cd al directorio QAplawywright y también tener iniciado el servidor del App localhost luego:
+	instalar dependencias:
+		- npm install playwright typescript @types/node
+                - npm install --save-dev ts-node
+		- npx playwright install chromium
+	lanzar test pero deben estar en el kidsapp y también en el activities.json:
+		- npm run test 		- (para probar todas las actividades)
+		- node qa-test.js 0     - (para probar una en concreto
+		- node qa-test.js 0-2   - (para probar multiples por indice)
+
+
+
+
+*************************************************************************************************
+***************************** SCRIPT PARA TEST ACTIVITIES ***************************************
+*************************************************************************************************
+
+0. Coger medida mas pequeña de iPhone y de ipad:
+	
+	- iphone7: 355x647 (el iPhone mide 375x367) Le quitamos 20px
+	- ipad: 
+
+
+#################### Cómo usar este script##############################
+
+1. **Instalar dependencias**:
+
+		- npm init -y
+		- npm install playwright axios
+
+2. **Configurar la API key de DeepSeek**:
+
+
+		- export DEEPSEEK_API_KEY=tu-api-key-aqui
+
+
+3. **Ejecutar el script**:
+
+
+	Para probar todas las actividades:
+
+		- node activity-tester.js
+
+	Para probar un rango específico (por ejemplo, actividades 0 a 200):
+
+		- node activity-tester.js 0-200
+
+	Para probar una sola actividad (por ejemplo, la actividad 5):
+
+		- node activity-tester.js 5
+
+
+
+
+*************************************************************************************************
+***************************** PROBLEMAS *********************************************************
+*************************************************************************************************
+
+	- Luego para seleccionar idioma podria ponerse en el enlace? modo ES o EN o GA? Asi podria ver todos los idiomas e incluso analizarlo mi IA http://localhost:4200/children/study/task/ESARCEN000359
+
+	- borrar capturas que no han dado fallo y quedarnos con las que si han dado fail  guardarlas en screenshots report?
+	- que me ayude a integrarme con deepseek y preguntarle el codigo
+
+*************************************************************************************************
+******************************* PROMPTS IA IMAGENES *********************************************
+*************************************************************************************************
+Actúa como un QA experto en revisión de interfaces. Voy a pasarte capturas de pantalla de una aplicación interactiva. Tienes que centrarte especialmente en el contenedor blanco interior, que es donde se carga el contenido de cada actividad. Este contenedor cambia según la actividad y a veces puede presentar problemas de maquetación.
+
+Tu tarea es revisar cuidadosamente si:
+
+Todo el contenido de la actividad se visualiza completamente dentro del contenedor blanco (sin cortes).
+
+Hay suficiente espacio (padding/margen) entre los elementos internos y los bordes del contenedor, especialmente el borde inferior, pero a veces también se sale por la derecha o izquierda.
+
+Ninguna imagen o texto está cortado o demasiado pegado al borde inferior (esto suele pasar porque el contenedor no tiene scroll y se corta visualmente).
+
+Si todo está correcto, responde con QA PASS.
+Si ves algún elemento cortado o sin suficiente espacio respecto al borde del contenedor blanco, responde con QA FAIL y explica brevemente el motivo.
+
+*************************************************************************************************
+******************************* PROMPTS SCRIPT **************************************************
+*************************************************************************************************
+
+Vale pues te digo, necesito un codigo automatizado usando la herramienta e idioma que tu quieras y que veas mas adecuado para que analice la actividad de la app hecha en angular haciendo:
+	
+	0. Establezca los tamaños del dispositivo de la webview 355x647 para móvil
+
+	1. se meta en el navegador y busque: http://localhost:4200/children/study/task/ESARCEN000359  el ultimo "ESARC..." corresponde al ID de una actividad, habra que crear un array con el nombre de todas las actividades que quiero testear o como puede que sean 1000 quizar poder yo seleccionar a la hora de lanzarlo: Run test activity 0-200 y testee de la 1 a 200 actividades y vaya lanzandolas yo por bloques. 
+	
+	2. Analice cuanta slides tiene la actividad, en la foto que te he mandado hay 6 slides, se ve en los numeros que hay arriba que veras que hay 1,2,3,4,5 y 6. este es el selector CSS pero no se si sirve el que veo en el devtools para interaccionar con el: li.ng-star-inserted:nth-child(6) este es el del slide 6
+
+	3. Que pulse el boton del ojo que tiene el selector: .f_btSolution y Haga captura, y asi con cada uno de los slides, se los pase a la IA "deepseek" usando su API y que la IA vea si el Layout es correcto (que no se salga ningún elemento hijo del contenedor blanco de la actividad) y que la respuesta es correcta, porque al darle al ojo te marca la respuesta correcta y estaría bien que confirmase que esa respuesta tiene sentido, por ejemplo si el ejercicio pone 5x5 que si la respuesta es 24 me diga que está mal el test. Hay algunas actividades con audios esa no espero poder conseguir la respuesta, pero para las actividades de lengua, mates e ingles si me gustaria que al menos me diera un log de error con el ESARC fallido y si es por layout o contenido y una captura del fallo con el nombre del esarc y tipo de fallo
+
+	4. Para pasar al siguiente slide deberá darle al botón siguiente: .yellowButton una vez ya le haya dado al ojo de corregir, hecho la captura y analizado la IA la captura. Ahí le dará siguiente e ira al siguiente slide y hará de nuevo el proceso de: darle al ojo, hacer captura, analizar la captura con la IA y pasar al siguiente slide. Para esto es importante saber cuantos slides tiene la actividad primero para cuando haga el ultimo slide directamente ponga la URL de la siguiente actividad y repita todo el proceso.
+
+	5.  No se si será mejora hacer otro test o en este mismo también poner un tamaño de ipad normal con tamaño de pantalla media y hacer todo el proceso también con este tamaño, aquí no haría falta repetir el proceso de verificar contenido, si no que solo el layout. Tu me dices que es lo mejor si hacerlo en este test o en otro specifico con otros tamaños e ir cambiándolos yo
+
+	
+	
