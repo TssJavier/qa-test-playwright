@@ -60,14 +60,13 @@ ponerlo a true:
 #################### Cómo usar este script##############################
 
 1. **Instalar dependencias**:
-
-		- npm init -y
+		
+		- npm install
+		- npm install playwright typescript @types/node
+                - npm install --save-dev ts-node
+		- npx playwright install chromium
 		- npm install playwright axios
-
-2. **Configurar la API key de DeepSeek**:
-
-
-		- export DEEPSEEK_API_KEY=tu-api-key-aqui
+		- npm install -g @angular/cli
 
 
 3. **Ejecutar el script**:
@@ -88,30 +87,6 @@ ponerlo a true:
 
 
 
-*************************************************************************************************
-***************************** PROBLEMAS *********************************************************
-*************************************************************************************************
-
-	- Luego para seleccionar idioma podria ponerse en el enlace? modo ES o EN o GA? Asi podria ver todos los idiomas e incluso analizarlo mi IA http://localhost:4200/children/study/task/ESARCEN000359
-
-	- borrar capturas que no han dado fallo y quedarnos con las que si han dado fail  guardarlas en screenshots report?
-	- que me ayude a integrarme con deepseek y preguntarle el codigo
-
-*************************************************************************************************
-******************************* PROMPTS IA IMAGENES *********************************************
-*************************************************************************************************
-Actúa como un QA experto en revisión de interfaces. Voy a pasarte capturas de pantalla de una aplicación interactiva. Tienes que centrarte especialmente en el contenedor blanco interior, que es donde se carga el contenido de cada actividad. Este contenedor cambia según la actividad y a veces puede presentar problemas de maquetación.
-
-Tu tarea es revisar cuidadosamente si:
-
-Todo el contenido de la actividad se visualiza completamente dentro del contenedor blanco (sin cortes).
-
-Hay suficiente espacio (padding/margen) entre los elementos internos y los bordes del contenedor, especialmente el borde inferior, pero a veces también se sale por la derecha o izquierda.
-
-Ninguna imagen o texto está cortado o demasiado pegado al borde inferior (esto suele pasar porque el contenedor no tiene scroll y se corta visualmente).
-
-Si todo está correcto, responde con QA PASS.
-Si ves algún elemento cortado o sin suficiente espacio respecto al borde del contenedor blanco, responde con QA FAIL y explica brevemente el motivo.
 
 
 	
