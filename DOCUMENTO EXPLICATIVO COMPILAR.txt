@@ -6,6 +6,7 @@
 	- Pedir acceso de lectura al repositorio cognifit/cognifit.clevermind.html5.git
 	- git clone git@github.com:cognifit/cognifit.clevermind.html5.git
 	- npm install
+	- npm install -g @angular/cli
 
 1. Para abrir padres App:
 	- npm start
